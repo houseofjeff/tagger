@@ -8,7 +8,6 @@
 #include <memory>
 #include <texttrie.hpp>
 
-int numNodes;
 
 TextTrie* create_trie( char* fname )
 {
@@ -16,17 +15,12 @@ TextTrie* create_trie( char* fname )
 
     TextTrie* pTrie = new TextTrie();
 
-    for (std::string line; getline(infile, line); )
+    for (std::string term; getline(infile, term); )
     {
-        std::istringstream f(line);
-        for (std::string word; getline(f, word, ' ');)
-        {
-            if (word.length() != 1)
-                pTrie->add_word(word);
-        }
+        pTrie->add_word(term);
     }
 
-    std::cout << numNodes << " nodes used for " << pTrie->count() << " words" << std::endl;
+    std::cout << pTrie->count_nodes() << " nodes used for " << pTrie->count_terms() << " words" << std::endl;
     infile.close();
 
     return pTrie;
@@ -41,7 +35,7 @@ void printResults( TextTrie::MatchList* pResults )
     TextTrie::MatchList::iterator it = pResults->begin();
     while (it != pResults->end())
     {
-        //std::cout << (*it) << std::endl;
+        std::cout << (*it) << std::endl;
         it++;
     }
 }

@@ -76,7 +76,7 @@ std::string Node::get_path()
 
 
 
-TextTrie::TextTrie()
+TextTrie::TextTrie() : isNewWord(true), numTerms(0), numNodes(0)
 {
     pRoot = new Node(NULL, ' ', false);
     candidates = CandidateList();
@@ -87,9 +87,14 @@ TextTrie::~TextTrie()
     delete pRoot;
 }
 
-long TextTrie::count()
+long TextTrie::count_terms()
 {
-    return numWords;
+    return numTerms;
+}
+
+long TextTrie::count_nodes()
+{
+    return numNodes;
 }
 
 void TextTrie::add_word(std::string word)
@@ -120,9 +125,10 @@ void TextTrie::add_word(std::string word)
         {
             // it doesn't, so add a new child to this node
             current = current->add_child(c, eow);
+            this->numNodes++;
         }
     }
-    this->numWords++;
+    this->numTerms++;
 }
 
 
@@ -132,13 +138,17 @@ TextTrie::MatchList* TextTrie::next(char c)
     if ((c == '\'') or ((c >= 'a') and (c <= 'z')))
     {
         this->advance(c);
+        this->isNewWord = false;
         return NULL;
     }
     else
     {
-        return this->end();
+        this->isNewWord = true;
+        MatchList* pResults = this->end();
+        this->advance(c);
+        return pResults;
     }
- }
+}
 
 TextTrie::MatchList* TextTrie::advance(char c) 
 {
@@ -161,7 +171,8 @@ TextTrie::MatchList* TextTrie::advance(char c)
         
         candidates.erase(it++);
     }
-    if (pRoot->has_child(c)) 
+
+    if (this->isNewWord and (pRoot->has_child(c)) )
     {
         candidates.push_front( pRoot->get_child(c) );
     }
@@ -177,8 +188,7 @@ TextTrie::MatchList* TextTrie::end()
     {
         if ((*it)->is_word())
             pResults->push_back((*it)->get_path());
-
-        candidates.erase(it++);
+        it++;
     }
 
     return pResults;

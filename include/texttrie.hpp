@@ -35,15 +35,18 @@ class TextTrie
         ~TextTrie();
 
         void add_word(std::string);
-        long count();
+        long count_terms();
+        long count_nodes();
         MatchList* next(char);
 
     private:
         typedef std::list<Node*> CandidateList;
 
         Node* pRoot;
-        long numWords;
+        long numTerms;
+        long numNodes;
         CandidateList candidates;
+        bool isNewWord;
 
         MatchList* advance(char);
         MatchList* end();
