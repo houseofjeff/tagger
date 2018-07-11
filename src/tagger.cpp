@@ -35,7 +35,7 @@ void printResults( TextTrie::MatchList* pResults )
     TextTrie::MatchList::iterator it = pResults->begin();
     while (it != pResults->end())
     {
-        std::cout << (*it) << std::endl;
+        std::cout << (*it).first << "," << (*it).second << std::endl;
         it++;
     }
 }
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 {
     if (argc != 3)
     {
-        std::cout << "usage: " << argv[0] << " [dictionaryfile] [corpusfile]" << std::endl << std::endl;
+        std::cout << "usage: " << argv[0] << " [termsfile] [corpusfile]" << std::endl << std::endl;
         exit(-1);
     }
     

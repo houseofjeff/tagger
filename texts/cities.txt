@@ -38,7 +38,6 @@ Troy
 Tuscaloosa
 Tuscumbia
 Tuskegee
-
 Alaska
 Anchorage
 Cordova
@@ -84,7 +83,6 @@ Walpi
 Window Rock
 Winslow
 Yuma
-
 Arkansas
 Arkadelphia
 Arkansas Post

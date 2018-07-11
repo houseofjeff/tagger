@@ -29,7 +29,9 @@ class Node
 class TextTrie
 {
     public:
-        typedef std::list<std::string> MatchList;
+        typedef std::pair<long,std::string> Match;
+        typedef std::list<Match> MatchList;
+
 
         TextTrie();
         ~TextTrie();
@@ -45,6 +47,7 @@ class TextTrie
         Node* pRoot;
         long numTerms;
         long numNodes;
+        long pos;
         CandidateList candidates;
         bool isNewWord;
 

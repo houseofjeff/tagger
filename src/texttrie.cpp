@@ -3,6 +3,7 @@
 #include <list>
 #include <stdlib.h>
 #include <texttrie.hpp>
+#include <sstream>
 
 
 Node::Node(Node* pParent, char name, bool eow) : pParent(pParent), name(name), eow(eow)
@@ -56,7 +57,7 @@ std::string Node::get_path()
     std::list<char> pathback = std::list<char>();
     Node* current = this;
 
-    while (current != NULL)
+    while (current->pParent != NULL)
     {
         pathback.push_front( current->get_name() );
         current = current->pParent;
@@ -76,7 +77,7 @@ std::string Node::get_path()
 
 
 
-TextTrie::TextTrie() : isNewWord(true), numTerms(0), numNodes(0)
+TextTrie::TextTrie() : isNewWord(true), numTerms(0), numNodes(0), pos(0)
 {
     pRoot = new Node(NULL, ' ', false);
     candidates = CandidateList();
@@ -153,8 +154,6 @@ TextTrie::MatchList* TextTrie::next(char c)
 TextTrie::MatchList* TextTrie::advance(char c) 
 {
     int startlen = candidates.size();
-    //if (startlen == 0)
-    //    std::cout << "-------" << std::endl;
 
     CandidateList::iterator it = candidates.begin();
     while (it != candidates.end())
@@ -166,17 +165,18 @@ TextTrie::MatchList* TextTrie::advance(char c)
         }
         else
         {
-            //std::cout << "  ?: " << (*it)->get_path() << c << std::endl;
+            // this term isn't in the list
         }
         
         candidates.erase(it++);
     }
 
-    if (this->isNewWord and (pRoot->has_child(c)) )
+    if (this->isNewWord && (pRoot->has_child(c)))
     {
         candidates.push_front( pRoot->get_child(c) );
     }
-    
+   
+    this->pos++;
 }
 
 TextTrie::MatchList* TextTrie::end()
@@ -187,7 +187,13 @@ TextTrie::MatchList* TextTrie::end()
     while (it != candidates.end())
     {
         if ((*it)->is_word())
-            pResults->push_back((*it)->get_path());
+        {
+            //std::ostringstream oss;
+            //std::string path = (*it)->get_path();
+            //oss << pos-path.length() << "," << path;
+            //pResults->push_back(oss.str());
+            pResults->push_back( Match(pos, (*it)->get_path()) );
+        }
         it++;
     }
 
