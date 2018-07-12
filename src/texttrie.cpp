@@ -4,6 +4,13 @@
 #include <stdlib.h>
 #include <texttrie.hpp>
 #include <sstream>
+#include <memory>
+
+//
+//  Each node in the Trie is a Node object. Each Node has a map of characters 
+//  to next states, and a boolean indicating if that node marks the end of 
+//  a word.
+//
 
 
 Node::Node(Node* pParent, char name, bool eow) : pParent(pParent), name(name), eow(eow)
@@ -51,6 +58,12 @@ char Node::get_name()
     return this->name;
 }
 
+//
+//  Return the word or partial word represented by the path of nodes down to
+//  the current one.   If our path is root -> P -> A -> T -> H (where H is the
+//  current node), then the returned value will be 'PATH'
+//
+
 std::string Node::get_path()
 {
     // Work backward up the tree, collecting the letters for each level...
@@ -76,6 +89,10 @@ std::string Node::get_path()
 }
 
 
+//
+//  This is the primary object, it respresents the full Trie structure and the
+//  functionality to run text through it, returning matched terms as it goes.
+//
 
 TextTrie::TextTrie() : isNewWord(true), numTerms(0), numNodes(0), pos(0)
 {
@@ -133,7 +150,14 @@ void TextTrie::add_word(std::string word)
 }
 
 
-TextTrie::MatchList* TextTrie::next(char c)
+//
+//  This is the public function, called once per character in the corpus file
+//  If the character is a letter, then we evolve each of the candidate matches
+//  by calling advance(char).   If it's whitespace or punctuation, we treat it
+//  as an end-of-word and we return still-valid candidates by calling end().
+//
+
+std::unique_ptr<TextTrie::MatchList> TextTrie::next(char c)
 {
     c = tolower(c);
     if ((c == '\'') or ((c >= 'a') and (c <= 'z')))
@@ -145,13 +169,13 @@ TextTrie::MatchList* TextTrie::next(char c)
     else
     {
         this->isNewWord = true;
-        MatchList* pResults = this->end();
+        std::unique_ptr<MatchList> pResults = this->end();
         this->advance(c);
         return pResults;
     }
 }
 
-TextTrie::MatchList* TextTrie::advance(char c) 
+std::unique_ptr<TextTrie::MatchList> TextTrie::advance(char c) 
 {
     int startlen = candidates.size();
 
@@ -177,21 +201,19 @@ TextTrie::MatchList* TextTrie::advance(char c)
     }
    
     this->pos++;
+
+    return std::unique_ptr<MatchList>{};
 }
 
-TextTrie::MatchList* TextTrie::end()
+std::unique_ptr<TextTrie::MatchList> TextTrie::end()
 {
     CandidateList::iterator it = candidates.begin();
-    MatchList* pResults = new MatchList();
+    std::unique_ptr<MatchList> pResults = std::make_unique<MatchList>();;
 
     while (it != candidates.end())
     {
         if ((*it)->is_word())
         {
-            //std::ostringstream oss;
-            //std::string path = (*it)->get_path();
-            //oss << pos-path.length() << "," << path;
-            //pResults->push_back(oss.str());
             pResults->push_back( Match(pos, (*it)->get_path()) );
         }
         it++;

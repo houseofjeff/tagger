@@ -1,4 +1,8 @@
+#ifndef TEXTTRIE_H_
+#define TEXTTRIE_H_
 class TextTrie;
+
+#include <memory>
 
 class Node
 {
@@ -39,7 +43,8 @@ class TextTrie
         void add_word(std::string);
         long count_terms();
         long count_nodes();
-        MatchList* next(char);
+        std::unique_ptr<MatchList> next(char);
+        //MatchList* next(char);
 
     private:
         typedef std::list<Node*> CandidateList;
@@ -51,9 +56,11 @@ class TextTrie
         CandidateList candidates;
         bool isNewWord;
 
-        MatchList* advance(char);
-        MatchList* end();
+        std::unique_ptr<MatchList> advance(char);
+        std::unique_ptr<MatchList> end();
+        //MatchList* advance(char);
+        //MatchList* end();
 
 };
 
-
+#endif

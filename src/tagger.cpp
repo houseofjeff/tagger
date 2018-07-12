@@ -1,19 +1,20 @@
 #include <iostream>
-#include <sstream>
-#include <fstream>
 #include <string>
+#include <istream>
+#include <fstream>
 #include <map>
 #include <list>
-#include <stdlib.h>
 #include <memory>
 #include <texttrie.hpp>
 
+//
+//  Creates a TextTrie and populates it with the contents of dictionary file
+//  The file should be formatted with one term per line
+//
 
-TextTrie* create_trie( char* fname )
+std::unique_ptr<TextTrie> create_trie(std::istream& infile)
 {
-    std::ifstream infile(fname);
-
-    TextTrie* pTrie = new TextTrie();
+    std::unique_ptr<TextTrie> pTrie = std::make_unique<TextTrie>();
 
     for (std::string term; getline(infile, term); )
     {
@@ -21,13 +22,16 @@ TextTrie* create_trie( char* fname )
     }
 
     std::cout << pTrie->count_nodes() << " nodes used for " << pTrie->count_terms() << " words" << std::endl;
-    infile.close();
 
     return pTrie;
 }
 
 
-void printResults( TextTrie::MatchList* pResults )
+//
+//  Outputs the results that came back from an iteration
+//
+
+void printResults(std::unique_ptr<TextTrie::MatchList>& pResults )
 {
     if (pResults == NULL)
         return;
@@ -35,10 +39,12 @@ void printResults( TextTrie::MatchList* pResults )
     TextTrie::MatchList::iterator it = pResults->begin();
     while (it != pResults->end())
     {
-        std::cout << (*it).first << "," << (*it).second << std::endl;
+        std::cout << (*it).first << "," << (*it).second << std::endl; 
         it++;
     }
 }
+
+//
 
 int main(int argc, char* argv[])
 {
@@ -49,22 +55,31 @@ int main(int argc, char* argv[])
     }
     
     // Build the trie from the dictionary file
-    TextTrie* pTrie = create_trie(argv[1]);
+    std::ifstream dictfile(argv[1]);
+    if (!dictfile)
+    {
+        std::cout << "Couldn't open file " << argv[1] << ", does it exist?" << std::endl;
+        return 0;
+    }
+    std::unique_ptr<TextTrie> pTrie = create_trie(dictfile);
 
     // now process the corpus file a character at a time
-    char c;
     std::ifstream corpusfile(argv[2]);
-
-    while (corpusfile.get(c))
+    if (!corpusfile)
     {
-        TextTrie::MatchList* pResults = pTrie->next(c);
-        printResults(pResults);
-        delete pResults;
+        std::cout << "Couldn't open file " << argv[2] << ", does it exist?" << std::endl;
+        return 0;
     }
 
-    TextTrie::MatchList* pResults = pTrie->next(' ');
-    printResults(pResults);
-    delete pResults;
+    char c;
+    while (corpusfile.get(c))
+    {
+        // one character at a time, evolve the list of candidate matches
+        std::unique_ptr<TextTrie::MatchList> pResults = pTrie->next(c);
+        printResults(pResults);
+    }
 
-    delete pTrie;
+    // And once more at the end of the file so that we finish things up
+    std::unique_ptr<TextTrie::MatchList> pResults = pTrie->next(' ');
+    printResults(pResults);
 }
