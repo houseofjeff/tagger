@@ -6,6 +6,7 @@
 #include <list>
 #include <memory>
 #include <texttrie.hpp>
+#include <triebuilder.hpp>
 
 //
 //  Creates a TextTrie and populates it with the contents of dictionary file
