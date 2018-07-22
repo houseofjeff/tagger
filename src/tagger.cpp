@@ -14,16 +14,15 @@
 
 std::unique_ptr<TextTrie> create_trie(std::istream& infile)
 {
-    std::unique_ptr<TextTrie> pTrie = std::make_unique<TextTrie>();
-
+    TrieBuilder builder = TrieBuilder();
     for (std::string term; getline(infile, term); )
     {
-        pTrie->add_word(term);
+        builder.add_word(&term);
     }
 
-    std::cout << pTrie->count_nodes() << " nodes used for " << pTrie->count_terms() << " words" << std::endl;
-
+    auto pTrie = builder.get_trie();
     //pTrie->print_tree();
+
     return pTrie;
 }
 
@@ -71,8 +70,7 @@ int main(int argc, char* argv[])
         std::cout << "Couldn't open file " << argv[2] << ", does it exist?" << std::endl;
         return 0;
     }
-
-    std::cout << "\n\n\nFINALLY\n\n";
+    
     char c;
     while (corpusfile.get(c))
     {

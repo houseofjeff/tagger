@@ -112,6 +112,113 @@ const std::string Node::get_path()
 
 
 //
+// ===========================================================================
+//
+
+TrieBuilder::TrieBuilder() 
+{
+    this->pTrie = std::make_unique<TextTrie>();
+    this->currentNodes = Node::NodeList();
+    this->currentWord = NULL;
+}
+
+void TrieBuilder::add_word(std::string* pWord)
+{
+    // Start with just the root node
+    this->currentNodes.clear();
+    this->currentWord = pWord;
+    this->currentPos = 0;
+    currentNodes.push_back( this->pTrie->pRoot );
+
+    // 
+    this->process_term();
+    this->numTerms++;
+}
+
+std::list<char> TrieBuilder::process_group()
+{
+    // To get in here we had to peek at a [, so consume it now
+    std::list<char> groupcontents = std::list<char>();
+
+    // until we see the group terminator, grab and store each char
+    while (1)
+    {
+        char c = get_next();
+        if (c != ']')
+        {
+            groupcontents.push_back(c);
+        }
+        else
+            break;
+    }
+
+    return groupcontents;
+}
+
+
+char TrieBuilder::get_next()
+{
+    char next = peek_next();
+    if (next != 0)
+        currentPos++;
+    return next;
+}
+
+char TrieBuilder::peek_next()
+{
+    if (currentPos < currentWord->length())
+        return (*currentWord)[currentPos];
+    else
+    {
+        return EOF;
+    }
+}
+
+void TrieBuilder::process_term()
+{
+    while (1) 
+    {
+        if (peek_next() == EOF)
+        {
+            // end of stream = send of term, so mark it all EOW and exit
+            for (Node* n : currentNodes)
+                n->set_eow();
+            break;
+        }
+
+        char nextToken = get_next();
+        Node::NodeList newList = Node::NodeList();
+        if (nextToken == '[')
+        {
+            std::list<char> groupContents = this->process_group();
+            for (Node* n : currentNodes)
+                for (char c : groupContents)
+                {
+                    Node* newNode =  n->get_or_create_child(c);
+                    newList.push_back(newNode);
+                }
+           
+        }
+        else
+        {
+            for (Node* n : currentNodes)
+            {
+                Node* newNode = n->get_or_create_child(nextToken);
+                newList.push_back( newNode );
+            }
+        }
+        currentNodes.swap(newList);
+    }
+}
+
+std::unique_ptr<TextTrie> TrieBuilder::get_trie()
+{
+    return std::move(pTrie);
+}
+
+//
+// ===========================================================================
+//
 //  This is the primary object, it respresents the full Trie structure and the
 //  functionality to run text through it, returning matched terms as it goes.
 //
@@ -160,80 +267,6 @@ std::string TextTrie::print_nodelist(Node::NodeList& l)
     ss << "]";
 
     return ss.str();
-}
-
-
-std::list<char> TextTrie::process_group(std::istringstream& term)
-{
-    // To get in here we had to peek at a [, so consume it now
-    char c;
-    term.get(c);
-    std::list<char> groupcontents = std::list<char>();
-
-    // until we see the group terminator, grab and store each char
-    while (c != ']')
-    {
-        term.get(c);
-        if (c != ']')
-        {
-            groupcontents.push_back(c);
-        }
-    }
-
-    return groupcontents;
-}
-
-
-void TextTrie::process_term(std::istringstream& term, Node::NodeList& currentNodes)
-{
-    while (1) 
-    {
-        int nextToken = term.peek();
-        if (nextToken == EOF)
-        {
-            // end of stream = send of term, so mark it all EOW
-            for (Node* n : currentNodes)
-                n->set_eow();
-            break;
-        }
-
-        if (nextToken == '[')
-        {
-            std::list<char> groupContents = this->process_group(term);
-            Node::NodeList newList = Node::NodeList();
-            for (Node* n : currentNodes)
-                for (char c : groupContents)
-                {
-                    Node* newNode =  n->get_or_create_child(c);
-                    newList.push_back(newNode);
-                }
-           
-            currentNodes = Node::NodeList(newList);
-            continue;
-        }
-        else
-        {
-            char c;
-            term.get(c);
-
-            auto newList = Node::NodeList();
-            for (Node* n : currentNodes)
-            {
-                Node* newNode = n->get_or_create_child(c);
-                newList.push_back( newNode );
-    //            std::cout << "Transforming " << n->get_path() << " -> " << newNode->get_path() << std::endl;
-            }
-            currentNodes = Node::NodeList(newList);
-        }
-    }
-}
-
-void TextTrie::add_word(std::string word)
-{
-    auto inputString = std::istringstream(word);
-    Node::NodeList currentNodes( { this->pRoot } ) ;
-    this->process_term(inputString, currentNodes);
-    this->numTerms++;
 }
 
 

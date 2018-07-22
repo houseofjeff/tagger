@@ -1,6 +1,7 @@
 #ifndef TEXTTRIE_H_
 #define TEXTTRIE_H_
 class TextTrie;
+class TrieBuilder;
 
 #include <memory>
 #include <sstream>
@@ -8,6 +9,7 @@ class TextTrie;
 class Node
 {
     friend TextTrie;
+    friend TrieBuilder;
     typedef std::map<char, Node*> ChildMap;
 
     private:
@@ -37,6 +39,8 @@ class Node
 
 class TextTrie
 {
+    friend TrieBuilder;
+
     public:
         typedef std::pair<long,std::string> Match;
         typedef std::list<Match> MatchList;
@@ -46,8 +50,6 @@ class TextTrie
         TextTrie();
         ~TextTrie();
 
-        Node::NodeList& transform(Node::NodeList&, TransformFn);
-        void add_word(std::string);
         const long count_terms();
         const long count_nodes();
         std::unique_ptr<MatchList> next(char);
@@ -57,9 +59,6 @@ class TextTrie
     private:
         
         typedef std::list<Node*> CandidateList;
-
-        std::list<char> process_group(std::istringstream& term);
-        void process_term(std::istringstream& term, Node::NodeList& currentNodes);
         void seteow(Node*);
 
         CandidateList candidates;
@@ -71,6 +70,29 @@ class TextTrie
 
         std::unique_ptr<MatchList> advance(char);
         std::unique_ptr<MatchList> end();
+};
+
+
+class TrieBuilder
+{
+    public:
+        TrieBuilder();
+        void add_word(std::string*);
+        std::unique_ptr<TextTrie> get_trie();
+
+    private:
+        char get_next();
+        char peek_next();
+        void process_term();
+        std::list<char> process_group();
+
+        long numTerms;
+        long numNodes;
+
+        std::unique_ptr<TextTrie> pTrie;
+        Node::NodeList currentNodes;
+        std::string* currentWord;
+        u_int currentPos;
 };
 
 #endif
