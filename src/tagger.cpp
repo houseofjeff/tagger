@@ -23,6 +23,7 @@ std::unique_ptr<TextTrie> create_trie(std::istream& infile)
 
     std::cout << pTrie->count_nodes() << " nodes used for " << pTrie->count_terms() << " words" << std::endl;
 
+    //pTrie->print_tree();
     return pTrie;
 }
 
@@ -31,7 +32,7 @@ std::unique_ptr<TextTrie> create_trie(std::istream& infile)
 //  Outputs the results that came back from an iteration
 //
 
-void printResults(std::unique_ptr<TextTrie::MatchList>& pResults )
+void printResults(const std::unique_ptr<TextTrie::MatchList>& pResults )
 {
     if (pResults == NULL)
         return;
@@ -71,6 +72,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
+    std::cout << "\n\n\nFINALLY\n\n";
     char c;
     while (corpusfile.get(c))
     {

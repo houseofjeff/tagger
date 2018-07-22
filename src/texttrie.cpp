@@ -5,6 +5,8 @@
 #include <texttrie.hpp>
 #include <sstream>
 #include <memory>
+#include <iostream>
+#include <algorithm>
 
 //
 //  Each node in the Trie is a Node object. Each Node has a map of characters 
@@ -13,7 +15,7 @@
 //
 
 
-Node::Node(Node* pParent, char name, bool eow) : pParent(pParent), name(name), eow(eow)
+Node::Node(Node* pParent, char name) : pParent(pParent), name(name)
 {
     children = ChildMap();
 }
@@ -37,9 +39,9 @@ Node* Node::get_child(char c)
     return children[c];
 }
 
-Node* Node::add_child(char c, bool eow)
+Node* Node::add_child(char c)
 {
-    children[c] = new Node(this, c, eow);
+    children[c] = new Node(this, c);
     return children[c];
 }
 
@@ -53,9 +55,29 @@ void Node::set_eow()
     this->eow = true;
 }
 
-char Node::get_name()
+const char Node::get_name()
 {
     return this->name;
+}
+
+Node* Node::get_or_create_child(char c)
+{
+    if (this->has_child(c))
+        return this->get_child(c);
+    else
+        return this->add_child(c);
+}
+
+void Node::print_tree(int depth)
+{
+    for (ChildMap::iterator it = children.begin(); it != children.end(); ++it)
+    {
+        std::cout << std::string(depth*2,' ') << (*it).first;
+        if ((*it).second->is_word())
+            std::cout << '*';
+        std::cout << std::endl;
+        (*it).second->print_tree( depth + 1);
+    }
 }
 
 //
@@ -64,7 +86,7 @@ char Node::get_name()
 //  current node), then the returned value will be 'PATH'
 //
 
-std::string Node::get_path()
+const std::string Node::get_path()
 {
     // Work backward up the tree, collecting the letters for each level...
     std::list<char> pathback = std::list<char>();
@@ -94,9 +116,9 @@ std::string Node::get_path()
 //  functionality to run text through it, returning matched terms as it goes.
 //
 
-TextTrie::TextTrie() : isNewWord(true), numTerms(0), numNodes(0), pos(0)
+TextTrie::TextTrie() : numTerms(0), numNodes(0), pos(0), isNewWord(true)
 {
-    pRoot = new Node(NULL, ' ', false);
+    pRoot = new Node(NULL, ' ');
     candidates = CandidateList();
 }
 
@@ -105,47 +127,112 @@ TextTrie::~TextTrie()
     delete pRoot;
 }
 
-long TextTrie::count_terms()
+const long TextTrie::count_terms()
 {
     return numTerms;
 }
 
-long TextTrie::count_nodes()
+const long TextTrie::count_nodes()
 {
     return numNodes;
 }
 
-void TextTrie::add_word(std::string word)
+
+void TextTrie::print_tree()
 {
-    Node* current = pRoot;
+    pRoot->print_tree(0);
+}
 
-    // iterate through the chars in the word, stepping down a level in the
-    // trie each time.
-    for (int i = 0; i < word.length(); i++)
+std::string TextTrie::print_nodelist(Node::NodeList& l) 
+{
+    std::stringstream ss = std::stringstream();
+
+    Node::NodeList::iterator lit = l.begin();
+    ss << "[";
+    while (lit != l.end())
     {
-        char c = tolower(word[i]);
-        bool eow = (i >= word.length()-1);
+        ss << (*lit)->get_path();
+        lit++;
+        if (lit != l.end())
+            ss << ", ";
+    }
 
-        // does the next level under this letter already exist?
-        if (current->has_child(c))
+    ss << "]";
+
+    return ss.str();
+}
+
+
+std::list<char> TextTrie::process_group(std::istringstream& term)
+{
+    // To get in here we had to peek at a [, so consume it now
+    char c;
+    term.get(c);
+    std::list<char> groupcontents = std::list<char>();
+
+    // until we see the group terminator, grab and store each char
+    while (c != ']')
+    {
+        term.get(c);
+        if (c != ']')
         {
-            // it does, so get the child for that letter
-            current = current->get_child(c);
+            groupcontents.push_back(c);
+        }
+    }
 
-            // it's possible that the node already exists (if you add 'men',
-            // but the word 'menu' was already added) so make this eow
-            if (eow) 
-            {
-                current->set_eow();
-            }
+    return groupcontents;
+}
+
+
+void TextTrie::process_term(std::istringstream& term, Node::NodeList& currentNodes)
+{
+    while (1) 
+    {
+        int nextToken = term.peek();
+        if (nextToken == EOF)
+        {
+            // end of stream = send of term, so mark it all EOW
+            for (Node* n : currentNodes)
+                n->set_eow();
+            break;
+        }
+
+        if (nextToken == '[')
+        {
+            std::list<char> groupContents = this->process_group(term);
+            Node::NodeList newList = Node::NodeList();
+            for (Node* n : currentNodes)
+                for (char c : groupContents)
+                {
+                    Node* newNode =  n->get_or_create_child(c);
+                    newList.push_back(newNode);
+                }
+           
+            currentNodes = Node::NodeList(newList);
+            continue;
         }
         else
         {
-            // it doesn't, so add a new child to this node
-            current = current->add_child(c, eow);
-            this->numNodes++;
+            char c;
+            term.get(c);
+
+            auto newList = Node::NodeList();
+            for (Node* n : currentNodes)
+            {
+                Node* newNode = n->get_or_create_child(c);
+                newList.push_back( newNode );
+    //            std::cout << "Transforming " << n->get_path() << " -> " << newNode->get_path() << std::endl;
+            }
+            currentNodes = Node::NodeList(newList);
         }
     }
+}
+
+void TextTrie::add_word(std::string word)
+{
+    auto inputString = std::istringstream(word);
+    Node::NodeList currentNodes( { this->pRoot } ) ;
+    this->process_term(inputString, currentNodes);
     this->numTerms++;
 }
 
@@ -177,8 +264,6 @@ std::unique_ptr<TextTrie::MatchList> TextTrie::next(char c)
 
 std::unique_ptr<TextTrie::MatchList> TextTrie::advance(char c) 
 {
-    int startlen = candidates.size();
-
     CandidateList::iterator it = candidates.begin();
     while (it != candidates.end())
     {
