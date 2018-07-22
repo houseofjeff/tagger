@@ -1,12 +1,11 @@
 #include <iostream>
 #include <string>
-#include <istream>
 #include <fstream>
 #include <map>
 #include <list>
-#include <memory>
 #include <texttrie.hpp>
 #include <triebuilder.hpp>
+
 
 //
 //  Creates a TextTrie and populates it with the contents of dictionary file
@@ -55,7 +54,9 @@ int main(int argc, char* argv[])
         exit(-1);
     }
     
+    //------------------------------------------------------------------------
     // Build the trie from the dictionary file
+
     std::ifstream dictfile(argv[1]);
     if (!dictfile)
     {
@@ -64,7 +65,11 @@ int main(int argc, char* argv[])
     }
     std::unique_ptr<TextTrie> pTrie = create_trie(dictfile);
 
-    // now process the corpus file a character at a time
+
+    //------------------------------------------------------------------------
+    // now process the corpus file a character at a time, and pass the
+    // characters into TextTrie.next(char) to evolve the internal state
+
     std::ifstream corpusfile(argv[2]);
     if (!corpusfile)
     {

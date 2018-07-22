@@ -26,3 +26,18 @@ Example:
 `bin/taggerapp texts/cities.txt texts/mobydick.txt`
 
 This will return the list of all the city names that can be found in Moby Dick.
+
+
+### Specifying a terms file
+
+The terms file contains the list of strings you're looking for, one word per line.  Terms can include multiple-choice groups using [] notation.  A sample terms file might look like this:
+
+```text
+one
+term  
+per  
+line
+they can contain spaces
+and[yi] ; matches both andy & andi
+```
+
