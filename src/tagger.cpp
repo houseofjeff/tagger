@@ -17,7 +17,14 @@ std::unique_ptr<TextTrie> create_trie(std::istream& infile)
     TrieBuilder builder = TrieBuilder();
     for (std::string term; getline(infile, term); )
     {
-        builder.add_word(&term);
+        try
+        {
+            builder.add_word(&term);
+        }
+        catch (syntax_error& e)
+        {
+            std::cout << "Syntax error in '" << term << "', " << e.what() << std::endl;
+        }
     }
 
     auto pTrie = builder.get_trie();

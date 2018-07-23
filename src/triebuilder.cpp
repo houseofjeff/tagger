@@ -1,5 +1,6 @@
 #include <map>
 #include <list>
+#include <iostream>
 #include <triebuilder.hpp>
 #include <texttrie.hpp>
 
@@ -24,6 +25,8 @@ TrieBuilder::TrieBuilder()
 
 void TrieBuilder::add_word(std::string* pWord)
 {
+    //std::cout << *pWord << std::endl;
+
     // set up the variables that will be used while adding this word
     this->currentNodes.clear();
     this->currentWord = pWord;
@@ -97,6 +100,11 @@ void TrieBuilder::process_term()
                     newList.push_back(newNode);
                 }
         }
+        else if (nextToken == ']')
+        {
+            // encountered a end-of-group bracket without an open group
+            throw syntax_error("Found end-of-group bracket outside of a group");
+        }
         else
         {
             // Just a regular character, advance all the currentNodes
@@ -123,10 +131,14 @@ std::list<char> TrieBuilder::process_group()
     while (1)
     {
         char c = get_next();
+
+        if (c == EOF)
+            throw syntax_error("Term ended with open group");
+        if (c == '[')
+            throw syntax_error("Can't have a group-within-a-group");
+
         if (c != ']')
-        {
             groupcontents.push_back(c);
-        }
         else
             break;
     }
