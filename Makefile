@@ -1,4 +1,4 @@
-CC := g++
+CC := g++-6
 
 SRCDIR := src
 BUILDDIR := build
@@ -8,7 +8,7 @@ SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 
-CFLAGS :=  -std=c++14  -Wall
+CFLAGS :=  -std=c++14  -Wall -O2
 LIB := -L lib
 INC := -I include
 
